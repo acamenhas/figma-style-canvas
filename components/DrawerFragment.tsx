@@ -1,12 +1,15 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
+//import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { Block } from "../hooks/useCanvas";
-import BlockRenderer from './BlockRenderer';
 import { ScreenSize } from './ResponsiveControls';
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useState, lazy } from 'react';
 import { Loader2 } from "lucide-react";
+import { LiveProvider, LiveEditor, LiveError, LivePreview } from "react-live";
+
+import dynamic from 'next/dynamic'
 
 interface DrawerFragmentProps {
   isOpen: boolean;
@@ -20,6 +23,9 @@ const DrawerFragment: React.FC<DrawerFragmentProps> = ({ isOpen, onOpenChange, u
     const [prompt, setPrompt] = useState('');
     const [placeholder, setPlaceholder] = useState('Digite as alterações que deseja fazer ao componente...');
     const [isLoading, setIsLoading] = useState(false);
+    const [componentCode, setComponentCode] = useState("");
+    const [scope, setScope] = useState({});
+
     
     const handleInputChange = (event: { target: { value: React.SetStateAction<string>; }; }) => {
         setPrompt(event.target.value);
@@ -38,9 +44,9 @@ const DrawerFragment: React.FC<DrawerFragmentProps> = ({ isOpen, onOpenChange, u
 
     const callChatGPT = async () => {
         setIsLoading(true);
-        //const initialprompt = "És um programador React experiente. Preciso que alteres as propriedades do seguinte objeto: " + JSON.stringify(block) + " com base nas seguintes instruções: " + prompt + ". Retorna apenas o objeto alterado, não cries novas propriedades, sem nenhuma outra informação."
         const elem = document.getElementById("drawer-content");
-        let initialprompt = "És um programador React experiente. Recebe este código html de um componente: " + elem?.innerHTML + " e altera apenas e só o que está dentro da primeira section com base nas seguintes instruções: " + prompt + ". Nunca alteres divs classes, img srcs, ids, estilos de elementos que não sejam para alterar! Tenta manter o máximo do código existente! Por exemplo se uma div tem uma classname, um style com background-color e padding e que seja só necessário mudar o background-color, mantém tudo o resto! Nunca geres código javascript. Retorna APENAS um objecto com uma propriedade: 1) html = o html alterado com inclusão da section e outras divs abaixo que te foram passadas no prompt sem mais explicações, nem comentários nem nenhuma outra informação."
+        let initialprompt = "És um programador React experiexnte. Recebe este código html de um componente: " + elem?.innerHTML + " e altera apenas e só o que está dentro da primeira section com base nas seguintes instruções: " + prompt + ". Nunca alteres divs classes, img srcs, ids, estilos de elementos que não sejam para alterar! Tenta manter o máximo do código existente! Por exemplo se uma div tem uma classname, um style com background-color e padding e que seja só necessário mudar o background-color, mantém tudo o resto! Nunca geres código javascript. Retorna APENAS um objecto com uma propriedade: 1) html = o html alterado com inclusão da section e outras divs abaixo que te foram passadas no prompt sem mais explicações, nem comentários nem nenhuma outra informação."
+        initialprompt = "Usa component com base nestas instruções: " + prompt + ". Try to use this library of components when needed. Here are the UI components that are available and how to use them: <component><name>Button</name></component><component><name>Card</name></component> Nunca geres código javascript. Nunca importes nenhum component. Retorna APENAS um object com duas propriedades: 1) 'html' = código do componente gerado, 2) 'components' = array dos nomes dos componentes que serão mais tarde importados, sem mais explicações, nem comentários nem nenhuma outra informação."
 
         try {
           const res = await axios.post(
@@ -51,21 +57,23 @@ const DrawerFragment: React.FC<DrawerFragmentProps> = ({ isOpen, onOpenChange, u
             },
             {
               headers: {
-                Authorization: `Bearer CHATGPT_API_KEY`,
+                Authorization: `Bearer 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`,
                 'Content-Type': 'application/json',
               },
             }
           );
           let newBlock = res.data.choices[0].message.content
-          console.log(newBlock)
-          newBlock = newBlock.replace(/```json\n/g, '').replace(/\n```/g, '')
+          newBlock = newBlock.replace(/```json\n/g, '').replace(/\n```/g, '').replace('\n','')
           newBlock = JSON.parse(newBlock)
 
-          if (elem) {
-            elem.innerHTML = newBlock.html
-          }
-
           if (newBlock) {
+            let _scope = {}
+            for (const element of newBlock.components) {
+              _scope[element] = dynamic(() => import('./ui/'+element.toLowerCase()).then(mod =>  mod[element]));
+            }
+
+            setScope(_scope)
+            setComponentCode(newBlock.html)
             //updateBlock(newBlock)
             setPrompt('')
             setIsLoading(false);
@@ -81,13 +89,14 @@ const DrawerFragment: React.FC<DrawerFragmentProps> = ({ isOpen, onOpenChange, u
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent side="bottom">
+      
         <div className="space-y-0 py-0" id="drawer-content">
-            <BlockRenderer
-                block={block}
-                updateBlockProperties={updateBlockProperties}
-                screenSize={screenSize}
-                className="pointer-events-auto"
-            />
+        { componentCode != '' ?
+          <LiveProvider code={componentCode} scope={scope}>
+            <LivePreview />
+          </LiveProvider>
+          : null }
+
           <div className="flex gap-2 py-2">
             <Textarea onChange={handleInputChange} onKeyDown={handleKeyDown} className="flex-1" placeholder={placeholder} />
             <Button onClick={() => callChatGPT()}>
