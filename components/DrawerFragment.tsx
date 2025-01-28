@@ -55,6 +55,12 @@ const DrawerFragment: React.FC<DrawerFragmentProps> = ({ isOpen, onOpenChange, u
               model: 'o1-mini',
               messages: [{ role: 'user', content: initialprompt }],
             },
+            {
+              headers: {
+                Authorization: `Bearer OPENAI_API_KEY`,
+                'Content-Type': 'application/json',
+              },
+            }
           );
           let newBlock = res.data.choices[0].message.content
           newBlock = newBlock.replace(/```json\n/g, '').replace(/\n```/g, '').replace('\n','')
