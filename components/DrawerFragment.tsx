@@ -57,7 +57,7 @@ const DrawerFragment: React.FC<DrawerFragmentProps> = ({ isOpen, onOpenChange, u
             },
             {
               headers: {
-                Authorization: `Bearer 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`,
+                Authorization: `Bearer OPENAI_API_KEY`,
                 'Content-Type': 'application/json',
               },
             }
