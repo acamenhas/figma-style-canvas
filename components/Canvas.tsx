@@ -44,7 +44,6 @@ const Canvas: React.FC<CanvasProps> = ({
     const block = blocks.find(b => b.id === blockId)
 
     if (block) {
-      console.log(block)
       setDrawerBlock(block)
       setIsDrawerOpen(true)
     }

@@ -23,7 +23,22 @@ const DrawerFragment: React.FC<DrawerFragmentProps> = ({ isOpen, onOpenChange, u
     const [prompt, setPrompt] = useState('');
     const [placeholder, setPlaceholder] = useState('Digite as alterações que deseja fazer ao componente...');
     const [isLoading, setIsLoading] = useState(false);
-    const [componentCode, setComponentCode] = useState("");
+    const [componentCode, setComponentCode] = useState(`
+      <div className="container mx-auto px-6 flex items-center">
+      <div className="w-1/2 pr-8">
+        <h1 className="text-4xl font-bold mb-4">Welcome to Our Website</h1>
+        <p className="text-xl mb-8">Discover amazing features and services</p>
+        <button className="bg-blue-500 text-white px-6 py-2 rounded">Get Started</button>
+      </div>
+      <div className="w-1/2">
+        <img
+          src="/placeholder.svg"
+          alt="Hero"
+          className="w-full h-auto rounded-lg shadow-lg"
+        />
+      </div>
+      <div className="text-5xl"></div>
+    </div>`);
     const [scope, setScope] = useState({});
 
     
@@ -42,11 +57,14 @@ const DrawerFragment: React.FC<DrawerFragmentProps> = ({ isOpen, onOpenChange, u
         throw new Error('Function not implemented.');
     }
 
+    // coloca uma nova coluna laranja com um card dentro. dentro desse card coloca um botão "OLA MUNDO"
+
     const callChatGPT = async () => {
         setIsLoading(true);
         const elem = document.getElementById("drawer-content");
         let initialprompt = "És um programador React experiexnte. Recebe este código html de um componente: " + elem?.innerHTML + " e altera apenas e só o que está dentro da primeira section com base nas seguintes instruções: " + prompt + ". Nunca alteres divs classes, img srcs, ids, estilos de elementos que não sejam para alterar! Tenta manter o máximo do código existente! Por exemplo se uma div tem uma classname, um style com background-color e padding e que seja só necessário mudar o background-color, mantém tudo o resto! Nunca geres código javascript. Retorna APENAS um objecto com uma propriedade: 1) html = o html alterado com inclusão da section e outras divs abaixo que te foram passadas no prompt sem mais explicações, nem comentários nem nenhuma outra informação."
-        initialprompt = "Cria um componente com base nestas instruções: " + prompt + ". Para tal tenta usar os seguinte componentes da nossa biblioteca caso precises. Deixo-te uma pequena documentação dos componentes disponiveis e a forma de utilizar: <component><name>Button</name></component><component><name>Card</name></component> Nunca geres código javascript. Nunca importes nenhum component. Retorna APENAS um object com duas propriedades: 1) 'html' = código do componente gerado, 2) 'components' = array dos nomes dos componentes que serão mais tarde importados, sem mais explicações, nem comentários nem nenhuma outra informação."
+        //initialprompt = "Cria um componente com base nestas instruções: " + prompt + ". Para tal tenta usar os seguinte componentes da nossa biblioteca caso precises. Deixo-te uma pequena documentação dos componentes disponiveis e a forma de utilizar: <component><name>Button</name></component><component><name>Card</name></component> Nunca geres código javascript. Nunca importes nenhum component. Retorna APENAS um object com duas propriedades: 1) 'html' = código do componente gerado, 2) 'components' = array dos nomes dos componentes que serão mais tarde importados, sem mais explicações, nem comentários nem nenhuma outra informação."
+        initialprompt = `És um programador React experiente com excelentes conhecimentos em tailwind css. Altera o seguinte componente: ` + componentCode + ` de forma a se adequar às instruções pedidas pelo utilizador: ` + prompt + `. Se achares podes usar a seguinte biblioteca de componentes: <component><name>Button</name></component><component><name>Card</name></component> Nunca geres código javascript. Retorna APENAS um object com duas propriedades: 1) 'html' = código do componente gerado, 2) 'components' = array dos nomes dos componentes que serão mais tarde importados, sem mais explicações, nem comentários nem nenhuma outra informação. O caracter de inicio do key/value do objecto tem que ser empre uma aspa, exemplo: "html": "...", "components": [...]`
 
         try {
           const res = await axios.post(
@@ -57,12 +75,13 @@ const DrawerFragment: React.FC<DrawerFragmentProps> = ({ isOpen, onOpenChange, u
             },
             {
               headers: {
-                Authorization: `Bearer OPENAI_API_KEY`,
+                Authorization: `Bearer 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`,
                 'Content-Type': 'application/json',
               },
             }
           );
           let newBlock = res.data.choices[0].message.content
+          console.log(newBlock)
           newBlock = newBlock.replace(/```json\n/g, '').replace(/\n```/g, '').replace('\n','')
           newBlock = JSON.parse(newBlock)
 
@@ -88,8 +107,8 @@ const DrawerFragment: React.FC<DrawerFragmentProps> = ({ isOpen, onOpenChange, u
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom">
-      
+      <SheetTitle className="hidden"></SheetTitle>
+      <SheetContent side="bottom" aria-describedby="">
         <div className="space-y-0 py-0" id="drawer-content">
         { componentCode != '' ?
           <LiveProvider code={componentCode} scope={scope}>

@@ -8,6 +8,13 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "*.{js,ts,jsx,tsx,mdx}"
   ],
+  safelist: process.env.NODE_ENV === 'development' 
+	? [{ pattern: /.*/ }]  // Em desenvolvimento, inclui tudo
+	: [
+		// Em produção, apenas classes específicas
+		{ pattern: /text-(.+)/ },
+		{ pattern: /bg-(.+)/ }
+	],
   theme: {
   	extend: {
   		colors: {
